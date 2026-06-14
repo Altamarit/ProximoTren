@@ -12,5 +12,10 @@ const catalogue = CatalogueSchema.parse({
 });
 
 export function GET() {
-  return NextResponse.json(catalogue);
+  return NextResponse.json(catalogue, {
+    headers: {
+      // AC-5 (E7-S3): Catalogue data is static; cache aggressively client-side.
+      "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600",
+    },
+  });
 }

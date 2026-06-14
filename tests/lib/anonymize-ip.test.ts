@@ -156,14 +156,20 @@ describe("anonymizeIP — Purity & Determinism (AC-6)", () => {
 
 describe("AuditEvent schema — Absence of raw IP (AC-4)", () => {
   const sampleEvent = {
-    event_type: "times_request" as const,
+    timestamp: "2026-06-14T10:00:00+00:00",
+    event_type: "crtm_request" as const,
     station_id: "PAR_SOL",
     line_id: "L1",
     direction: "Valdecarros",
-    source: "live" as const,
-    status_code: 200,
-    timestamp_iso: "2026-06-14T10:00:00+00:00",
-    duration_ms: 42,
+    response_code: 200,
+    latency_ms: 42,
+    cache_hit: false,
+    cache_age_s: null,
+    error_detail: null,
+    mock_mode: false,
+    bff_version: "1.0.0",
+    request_id: "550e8400-e29b-41d4-a716-446655440000",
+    tenant_id: "default",
   };
 
   it("AuditEvent parses without IP field", () => {
@@ -181,7 +187,7 @@ describe("AuditEvent schema — Absence of raw IP (AC-4)", () => {
     const entries = Array.from({ length: 50 }, (_, i) => ({
       ...sampleEvent,
       station_id: `STATION_${i}`,
-      duration_ms: i * 10,
+      latency_ms: i * 10,
     }));
     const json = JSON.stringify(entries);
     const nonAnonIpv4 = /\d{1,3}\.\d{1,3}\.\d{1,3}\.[1-9]\d*/;
@@ -204,14 +210,20 @@ describe("AuditEvent schema — Absence of user_agent (AC-5)", () => {
 
   it("AuditEvent with extra user_agent field is stripped on parse", () => {
     const withAgent = {
-      event_type: "times_request" as const,
+      timestamp: "2026-06-14T10:00:00+00:00",
+      event_type: "crtm_request" as const,
       station_id: "PAR_SOL",
       line_id: "L1",
       direction: "Valdecarros",
-      source: "live" as const,
-      status_code: 200,
-      timestamp_iso: "2026-06-14T10:00:00+00:00",
-      duration_ms: 42,
+      response_code: 200,
+      latency_ms: 42,
+      cache_hit: false,
+      cache_age_s: null,
+      error_detail: null,
+      mock_mode: false,
+      bff_version: "1.0.0",
+      request_id: "550e8400-e29b-41d4-a716-446655440000",
+      tenant_id: "default",
       user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
     };
     const parsed = AuditEventSchema.parse(withAgent);
