@@ -27,7 +27,10 @@ export const BFFResponseSchema = z.object({
   error_context: z
     .object({
       message: z.string(),
-      type: z.string(),
+      // Named literal union prevents magic-string comparisons across the codebase.
+      // Server-side values: CRTMAPIError, CRTMTimeoutError.
+      // Client-side values: FetchError, NetworkError, NoService, ParseError.
+      type: z.enum(["CRTMAPIError", "CRTMTimeoutError", "FetchError", "NetworkError", "NoService", "ParseError"]),
     })
     .nullable(),
 });

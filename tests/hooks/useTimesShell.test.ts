@@ -103,4 +103,19 @@ describe("useTimesShell", () => {
       await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     });
   });
+
+  describe("AbortController cleanup", () => {
+    it("abort on unmount does NOT transition to empty state", async () => {
+      // Fetch that never resolves — simulates slow BFF
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockReturnValue(new Promise(() => { /* never resolves */ }))
+      );
+      const { result, unmount } = renderHook(() => useTimesShell(ctx));
+      expect(result.current.uiState.status).toBe("loading");
+      unmount();
+      // After unmount, state must not transition to empty
+      expect(result.current.uiState.status).toBe("loading");
+    });
+  });
 });

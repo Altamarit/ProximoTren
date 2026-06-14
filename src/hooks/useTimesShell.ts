@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { BFFResponseSchema } from "@/types/ui-state.types";
 import type { UIState, BFFResponse } from "@/types/ui-state.types";
 import type { SelectedContext } from "@/types/context.types";
+import { logger } from "@/lib/logger";
 
 export interface UseTimesShellReturn {
   uiState: UIState;
@@ -33,7 +34,10 @@ export function useTimesShell(context: SelectedContext | null): UseTimesShellRet
         url.searchParams.set("direction", ctx.direction);
 
         const res = await fetch(url.toString(), { signal: controller.signal });
-        if (!res.ok) throw new Error(`BFF responded ${res.status}`);
+        if (!res.ok) {
+          logger.error("BFF responded with non-2xx status", { status: res.status, stationId: ctx.stationId, lineId: ctx.lineId });
+          throw new Error(`BFF responded ${res.status}`);
+        }
 
         const json: unknown = await res.json();
         const bff: BFFResponse = BFFResponseSchema.parse(json);
@@ -45,6 +49,11 @@ export function useTimesShell(context: SelectedContext | null): UseTimesShellRet
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
+        logger.error("useTimesShell fetch failed", {
+          message: (err as Error).message,
+          stationId: ctx.stationId,
+          lineId: ctx.lineId,
+        });
         setUIState({ status: "empty", errorContext: { message: (err as Error).message, type: "FetchError" } });
       } finally {
         setIsRefreshing(false);
