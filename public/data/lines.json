@@ -1,0 +1,15 @@
+[
+  { "line_id": "L1",  "name": "Línea 1",            "color_hex": "#009FE3", "terminal_stations": ["Pinar de Chamartín", "Valdecarros"] },
+  { "line_id": "L2",  "name": "Línea 2",            "color_hex": "#E30613", "terminal_stations": ["Cuatro Caminos", "Las Rosas"] },
+  { "line_id": "L3",  "name": "Línea 3",            "color_hex": "#F6C900", "terminal_stations": ["Moncloa", "Villaverde Alto"] },
+  { "line_id": "L4",  "name": "Línea 4",            "color_hex": "#9D4F15", "terminal_stations": ["Argüelles", "Pinar de Chamartín"] },
+  { "line_id": "L5",  "name": "Línea 5",            "color_hex": "#007B4B", "terminal_stations": ["Alameda de Osuna", "Casa de Campo"] },
+  { "line_id": "L6",  "name": "Línea 6 Circular",   "color_hex": "#9A9A9A", "terminal_stations": ["Cuatro Caminos", "Cuatro Caminos"] },
+  { "line_id": "L7",  "name": "Línea 7",            "color_hex": "#F39200", "terminal_stations": ["Pitis", "Hospital del Henares"] },
+  { "line_id": "L8",  "name": "Línea 8",            "color_hex": "#E5007D", "terminal_stations": ["Nuevos Ministerios", "Aeropuerto T4"] },
+  { "line_id": "L9",  "name": "Línea 9",            "color_hex": "#6C2E8E", "terminal_stations": ["Paco de Lucía", "Arganda del Rey"] },
+  { "line_id": "L10", "name": "Línea 10",           "color_hex": "#004F9F", "terminal_stations": ["Hospital Infanta Sofía", "Puerta del Sur"] },
+  { "line_id": "L11", "name": "Línea 11",           "color_hex": "#6BA12B", "terminal_stations": ["Plaza Elíptica", "La Fortuna"] },
+  { "line_id": "L12", "name": "Línea 12 MetroSur",  "color_hex": "#8B7A4D", "terminal_stations": ["Oporto", "Puerta del Sur"] },
+  { "line_id": "ML1", "name": "MetroLigero ML1",    "color_hex": "#7EB820", "terminal_stations": ["Pinar de Chamartín", "Las Tablas"] }
+]

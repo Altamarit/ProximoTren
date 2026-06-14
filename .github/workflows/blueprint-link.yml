@@ -1,0 +1,92 @@
+name: Blueprint Link
+
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened, closed, edited]
+  pull_request_review:
+    types: [submitted, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+jobs:
+  link:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Identify event
+        id: event
+        run: |
+          echo "kind=${{ github.event_name }}" >> "$GITHUB_OUTPUT"
+          echo "actor=${{ github.actor }}" >> "$GITHUB_OUTPUT"
+
+      - name: Push event
+        if: github.event_name == 'push'
+        run: |
+          curl -sS -X POST "https://atosblueprint.spaincentral.cloudapp.azure.com/backend/api/sdk/events/push" \
+            -H "Authorization: Bearer ${{ secrets.BLUEPRINT_TOKEN }}" \
+            -H "X-Dev-Identity: ${{ github.event.head_commit.author.email }}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -nc \
+              --arg branch "${{ github.ref_name }}" \
+              --arg sha "${{ github.sha }}" \
+              --arg repo "${{ github.repository }}" \
+              --argjson forced "${{ github.event.forced == true && 'true' || 'false' }}" \
+              --argjson commits "$(jq '.commits | map({id, message, author: .author.email, added, removed, modified})' "$GITHUB_EVENT_PATH")" \
+              '{branch:$branch, sha:$sha, repo:$repo, forced:$forced, commits:$commits}')"
+
+      - name: Branch convention check (soft)
+        if: github.event_name == 'push' && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
+        continue-on-error: true
+        run: |
+          if [[ ! "${{ github.ref_name }}" =~ ^[a-z]+/PROJ-[0-9]+(-[a-z0-9-]+)?$ ]]; then
+            echo "::warning::Branch '${{ github.ref_name }}' does not match convention '<initials>/PROJ-<id>-<slug>'. Blueprint will surface this as an orphan branch."
+          fi
+
+      - name: PR event
+        if: github.event_name == 'pull_request'
+        run: |
+          curl --fail-with-body -sS -X POST "https://atosblueprint.spaincentral.cloudapp.azure.com/backend/api/sdk/events/pr" \
+            -H "Authorization: Bearer ${{ secrets.BLUEPRINT_TOKEN }}" \
+            -H "X-Dev-Identity: ${{ github.event.pull_request.user.email }}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -nc \
+              --arg action "${{ github.event.action }}" \
+              --arg repo "${{ github.repository }}" \
+              --arg title "${{ github.event.pull_request.title }}" \
+              --arg body "${{ github.event.pull_request.body }}" \
+              --arg branch "${{ github.event.pull_request.head.ref }}" \
+              --argjson number "${{ github.event.pull_request.number }}" \
+              --argjson merged "${{ github.event.pull_request.merged || false }}" \
+              --arg merge_sha "${{ github.event.pull_request.merge_commit_sha }}" \
+              --argjson files "$(gh pr diff ${{ github.event.pull_request.number }} --name-only --repo ${{ github.repository }} 2>/dev/null | jq -R -s 'split("\n") | map(select(length>0))')" \
+              '{action:$action, repo:$repo, prNumber:$number, title:$title, body:$body, branch:$branch, merged:$merged, mergeSha:$merge_sha, files:$files}')"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: PR sprawl check (soft)
+        if: github.event_name == 'pull_request' && github.event.action != 'closed'
+        continue-on-error: true
+        run: |
+          file_count=$(gh pr diff ${{ github.event.pull_request.number }} --name-only --repo ${{ github.repository }} 2>/dev/null | wc -l)
+          if [[ "$file_count" -gt 30 ]]; then
+            echo "::warning::PR touches $file_count files — sprawls beyond a single story. Consider splitting."
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Review event
+        if: github.event_name == 'pull_request_review'
+        run: |
+          curl -sS -X POST "https://atosblueprint.spaincentral.cloudapp.azure.com/backend/api/sdk/events/review" \
+            -H "Authorization: Bearer ${{ secrets.BLUEPRINT_TOKEN }}" \
+            -H "X-Dev-Identity: ${{ github.event.review.user.email }}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -nc \
+              --arg state "${{ github.event.review.state }}" \
+              --arg body "${{ github.event.review.body }}" \
+              --arg repo "${{ github.repository }}" \
+              --argjson prNumber "${{ github.event.pull_request.number }}" \
+              '{state:$state, body:$body, repo:$repo, prNumber:$prNumber}')"

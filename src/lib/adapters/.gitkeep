@@ -1,0 +1,2 @@
+// Hexagonal architecture: transport adapters (CRTMAdapter, MockAdapter) go here
+// Implementing TransportAdapter interface defined in E3-S1

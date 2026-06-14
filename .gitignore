@@ -1,0 +1,29 @@
+
+# Next.js
+.next/
+out/
+build/
+
+# Dependencies
+node_modules/
+
+# Environment
+.env*.local
+.env
+
+# Playwright
+playwright-report/
+test-results/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Atos SDK (do not commit tokens or binaries)
+_atos/
+_atos-output/
+tools/mcp-server/
+tools/mcp-server/.token
+*.enc
+.cursor/mcp.json
+.vscode/mcp.json

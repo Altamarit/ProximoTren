@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Próximo Metro Madrid — Demo Offline</title>
+  <style>
+    /* ── NOTA: Este archivo es un artefacto de demo standalone. ──────────────
+       No comparte código con src/. Todos los datos son ficticios y están
+       hardcodeados únicamente con fines de demo. No se realizan peticiones
+       de red. Se puede abrir directamente desde el sistema de archivos.
+    ──────────────────────────────────────────────────────────────────────── */
+
+    :root, [data-theme="light"] {
+      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2rem);
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-5: 1.25rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+      --space-10: 2.5rem;
+      --space-12: 3rem;
+      --radius-sm: 0.375rem;
+      --radius-md: 0.75rem;
+      --radius-lg: 1.25rem;
+      --radius-full: 9999px;
+      --color-bg: #eef3f8;
+      --color-surface: #ffffff;
+      --color-surface-2: #f7f9fc;
+      --color-border: #d9e1ea;
+      --color-text: #112133;
+      --color-text-muted: #5d6b7c;
+      --color-text-faint: #8b96a5;
+      --color-primary: #0046ad;
+      --color-primary-hover: #00398d;
+      --color-primary-soft: #dce7fb;
+      --color-success: #1f7a3f;
+      --color-warning: #b45309;
+      --color-banner-bg: #fffbeb;
+      --color-banner-border: #fde68a;
+      --color-banner-text: #92400e;
+      --shadow-sm: 0 2px 8px rgba(17, 33, 51, 0.06);
+      --shadow-md: 0 12px 30px rgba(17, 33, 51, 0.1);
+      --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    [data-theme="dark"] {
+      --color-bg: #0f1722;
+      --color-surface: #15202d;
+      --color-surface-2: #1b2735;
+      --color-border: #2c3a4d;
+      --color-text: #edf3fb;
+      --color-text-muted: #b2c0d2;
+      --color-text-faint: #7f8da0;
+      --color-primary: #73a7ff;
+      --color-primary-hover: #8ab6ff;
+      --color-primary-soft: #1c3157;
+      --color-success: #6ecf92;
+      --color-warning: #f3b35f;
+      --color-banner-bg: #2d2008;
+      --color-banner-border: #78450c;
+      --color-banner-text: #fbbf24;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 14px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: var(--font-body);
+      background:
+        radial-gradient(circle at top, rgba(0,70,173,0.12), transparent 32%),
+        var(--color-bg);
+      color: var(--color-text);
+      font-size: var(--text-base);
+      line-height: 1.5;
+      display: flex;
+      justify-content: center;
+      padding: var(--space-4);
+    }
+
+    button, select, input { font: inherit; }
+
+    /* ── Banner de datos de ejemplo ─────────────────────────────────────── */
+    .demo-banner {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: 0.55rem var(--space-4);
+      background: var(--color-banner-bg);
+      border-bottom: 1px solid var(--color-banner-border);
+      color: var(--color-banner-text);
+      font-size: var(--text-xs);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .demo-banner svg { flex: 0 0 auto; }
+
+    /* ── App shell ──────────────────────────────────────────────────────── */
+    .app {
+      width: 100%;
+      max-width: 430px;
+      min-height: calc(100dvh - 2rem);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 28px;
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .statusbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.85rem 1.25rem 0.35rem;
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      background: linear-gradient(180deg, var(--color-surface-2), var(--color-surface));
+    }
+
+    .screen {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+      padding: 0 var(--space-4) var(--space-5);
+      flex: 1;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: var(--space-3);
+    }
+
+    .brand {
+      display: flex;
+      gap: var(--space-3);
+      align-items: center;
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: var(--color-primary);
+      display: grid;
+      place-items: center;
+      color: white;
+      box-shadow: var(--shadow-sm);
+      flex: 0 0 auto;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: var(--text-lg);
+      line-height: 1.1;
+    }
+
+    .brand p {
+      margin: 0.1rem 0 0;
+      color: var(--color-text-muted);
+      font-size: var(--text-sm);
+    }
+
+    .icon-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: transform var(--transition), background var(--transition), border-color var(--transition);
+    }
+
+    .icon-btn:hover { transform: translateY(-1px); background: var(--color-surface-2); }
+
+    /* ── Selector de contexto ────────────────────────────────────────────── */
+    .field {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .label {
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-text-faint);
+      font-weight: 700;
+    }
+
+    .station-select, .direction-select {
+      width: 100%;
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      padding: 0.95rem 2.5rem 0.95rem 1rem;
+      background: var(--color-surface-2);
+      color: var(--color-text);
+      appearance: none;
+      background-image: linear-gradient(45deg, transparent 50%, var(--color-text-muted) 50%),
+                        linear-gradient(135deg, var(--color-text-muted) 50%, transparent 50%);
+      background-position: calc(100% - 22px) calc(50% - 3px),
+                           calc(100% - 16px) calc(50% - 3px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+      cursor: pointer;
+    }
+
+    .lines {
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+
+    .line-chip {
+      border: 1px solid transparent;
+      border-radius: var(--radius-full);
+      padding: 0.55rem 0.9rem;
+      font-size: var(--text-sm);
+      font-weight: 700;
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      cursor: pointer;
+      transition: transform var(--transition), border-color var(--transition), background var(--transition);
+      min-height: 44px;
+      min-width: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .line-chip:hover { transform: translateY(-1px); }
+
+    .line-chip.is-active {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    /* ── Hero card ──────────────────────────────────────────────────────── */
+    .hero-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: var(--space-5);
+      background: linear-gradient(180deg, var(--color-surface), var(--color-surface-2));
+    }
+
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-6);
+      gap: var(--space-4);
+    }
+
+    .hero-title {
+      margin: 0;
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+    }
+
+    .hero-badge {
+      border-radius: var(--radius-full);
+      padding: 0.45rem 0.8rem;
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      font-size: var(--text-xs);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .minutes {
+      font-size: clamp(4rem, 14vw, 5.5rem);
+      line-height: 0.9;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      font-variant-numeric: tabular-nums lining-nums;
+      margin: 0;
+    }
+
+    .minutes small {
+      display: block;
+      margin-top: 0.55rem;
+      font-size: var(--text-base);
+      letter-spacing: 0;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .hero-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+      margin-top: var(--space-6);
+    }
+
+    .meta-box {
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+    }
+
+    .meta-box span {
+      display: block;
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.3rem;
+    }
+
+    .meta-box strong {
+      font-size: var(--text-sm);
+    }
+
+    .section-title {
+      margin: 0 0 var(--space-3);
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      font-weight: 700;
+    }
+
+    /* ── Lista de siguientes trenes ─────────────────────────────────────── */
+    .list-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .train-row {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-4);
+      padding: var(--space-4);
+      align-items: center;
+    }
+
+    .train-row + .train-row {
+      border-top: 1px solid var(--color-border);
+    }
+
+    .eta {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums lining-nums;
+    }
+
+    .destination {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      margin-top: 0.15rem;
+    }
+
+    .platform {
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Estado del servicio ─────────────────────────────────────────────── */
+    .status-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: var(--space-4);
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-4);
+      align-items: flex-start;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.5rem 0.8rem;
+      border-radius: var(--radius-full);
+      background: rgba(31,122,63,0.12);
+      color: var(--color-success);
+      font-size: var(--text-sm);
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 4px rgba(31,122,63,0.12);
+      flex: 0 0 auto;
+    }
+
+    .updated {
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+      margin-top: var(--space-2);
+    }
+
+    /* ── Acciones (sticky bottom) ────────────────────────────────────────── */
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      position: sticky;
+      bottom: 0;
+      background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--color-border);
+    }
+
+    .btn {
+      min-height: 48px;
+      border-radius: 14px;
+      border: 1px solid var(--color-border);
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform var(--transition), background var(--transition), border-color var(--transition);
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: var(--color-primary);
+      color: white;
+      border-color: var(--color-primary);
+    }
+
+    .btn-primary:hover { background: var(--color-primary-hover); }
+
+    .btn-secondary {
+      background: var(--color-surface-2);
+      color: var(--color-text);
+    }
+
+    @media (max-width: 420px) {
+      body { padding: 0; }
+      .app {
+        min-height: 100dvh;
+        border-radius: 0;
+        max-width: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Demo offline: consulta de próximo metro">
+
+    <!-- ══ BANNER DE DATOS DE EJEMPLO ════════════════════════════════════ -->
+    <div class="demo-banner" role="note" aria-label="Aviso: datos de ejemplo">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      DATOS DE EJEMPLO — Demo offline. No refleja tiempos reales.
+    </div>
+
+    <!-- ══ BARRA DE ESTADO SIMULADA ══════════════════════════════════════ -->
+    <div class="statusbar" aria-hidden="true">
+      <span id="clock">09:41</span>
+      <span>Madrid · 5G · 100%</span>
+    </div>
+
+    <section class="screen">
+
+      <!-- ── Cabecera ─────────────────────────────────────────────────── -->
+      <header class="header">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 16.5L8 7.5L12 16.5L16 7.5L20 16.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <h1>Próximo Metro</h1>
+            <p>Consulta rápida · Metro de Madrid</p>
+          </div>
+        </div>
+        <button class="icon-btn" type="button" id="theme-toggle" aria-label="Cambiar tema">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </header>
+
+      <!-- ── Selector de contexto ─────────────────────────────────────── -->
+      <section class="field" aria-labelledby="station-label">
+        <div>
+          <div class="label" id="station-label">Estación</div>
+        </div>
+        <select class="station-select" id="station-select" aria-label="Seleccionar estación">
+          <option value="nuevos-ministerios">Nuevos Ministerios</option>
+          <option value="sol">Sol</option>
+          <option value="gran-via">Gran Vía</option>
+          <option value="moncloa">Moncloa</option>
+          <option value="callao">Callao</option>
+          <option value="retiro">Retiro</option>
+          <option value="atocha">Atocha</option>
+          <option value="plaza-espana">Plaza de España</option>
+          <option value="tribunal">Tribunal</option>
+          <option value="banco-espana">Banco de España</option>
+        </select>
+
+        <div class="lines" id="lines-container" aria-label="Líneas disponibles" role="group" aria-labelledby="station-label">
+        </div>
+
+        <div>
+          <div class="label" style="margin-bottom: 0.45rem;" id="direction-label">Dirección</div>
+          <select class="direction-select" id="direction-select" aria-labelledby="direction-label">
+          </select>
+        </div>
+      </section>
+
+      <!-- ── Próximo tren (hero) ───────────────────────────────────────── -->
+      <section class="hero-card" aria-labelledby="hero-title">
+        <div class="hero-top">
+          <p class="hero-title" id="hero-title">Próximo tren</p>
+          <span class="hero-badge" id="hero-badge">Línea —</span>
+        </div>
+        <p class="minutes" id="next-minutes" aria-live="polite">—<small>minutos</small></p>
+        <div class="hero-meta">
+          <div class="meta-box">
+            <span>Destino</span>
+            <strong id="next-destination">—</strong>
+          </div>
+          <div class="meta-box">
+            <span>Andén</span>
+            <strong id="next-platform">—</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Siguientes trenes ─────────────────────────────────────────── -->
+      <section aria-labelledby="next-trains-title">
+        <h2 class="section-title" id="next-trains-title">Siguientes trenes</h2>
+        <div class="list-card" id="trains-list" aria-live="polite">
+        </div>
+      </section>
+
+      <!-- ── Estado del servicio ──────────────────────────────────────── -->
+      <section class="status-card" aria-labelledby="service-title">
+        <div>
+          <div class="label" id="service-title">Estado del servicio</div>
+          <div class="status-pill">
+            <span class="dot" aria-hidden="true"></span>
+            Servicio normal
+          </div>
+          <div class="updated" id="updated-time">Actualizado a las 09:41</div>
+        </div>
+      </section>
+
+      <!-- ── Botones de acción ─────────────────────────────────────────── -->
+      <div class="actions" role="group" aria-label="Acciones">
+        <button class="btn btn-secondary" type="button" id="btn-change">Cambiar estación</button>
+        <button class="btn btn-primary" type="button" id="btn-refresh" aria-label="Actualizar datos de ejemplo">Actualizar</button>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+  (function () {
+    'use strict';
+
+    /* ── Datos hardcodeados de la red de Metro de Madrid ─────────────────
+       Fuente: datos de ejemplo. No reflejan horarios reales.
+    ──────────────────────────────────────────────────────────────────── */
+    var CATALOGUE = {
+      'nuevos-ministerios': {
+        name: 'Nuevos Ministerios',
+        lines: {
+          'L6': {
+            label: 'L6',
+            directions: [
+              { label: 'Circular (sentido horario)', trains: [
+                { eta: 3, platform: 'Andén 1', destination: 'Circular' },
+                { eta: 9, platform: 'Andén 1', destination: 'Circular' },
+                { eta: 15, platform: 'Andén 1', destination: 'Circular' }
+              ]},
+              { label: 'Circular (sentido antihorario)', trains: [
+                { eta: 5, platform: 'Andén 2', destination: 'Circular' },
+                { eta: 11, platform: 'Andén 2', destination: 'Circular' },
+                { eta: 17, platform: 'Andén 2', destination: 'Circular' }
+              ]}
+            ]
+          },
+          'L8': {
+            label: 'L8',
+            directions: [
+              { label: 'Aeropuerto T4', trains: [
+                { eta: 4, platform: 'Andén 1', destination: 'Aeropuerto T4' },
+                { eta: 10, platform: 'Andén 1', destination: 'Aeropuerto T4' },
+                { eta: 16, platform: 'Andén 1', destination: 'Aeropuerto T4' }
+              ]},
+              { label: 'Barajas', trains: [
+                { eta: 2, platform: 'Andén 2', destination: 'Barajas' },
+                { eta: 8, platform: 'Andén 2', destination: 'Barajas' },
+                { eta: 14, platform: 'Andén 2', destination: 'Barajas' }
+              ]}
+            ]
+          },
+          'L10': {
+            label: 'L10',
+            directions: [
+              { label: 'Puerta del Sur', trains: [
+                { eta: 2, platform: 'Andén 2', destination: 'Puerta del Sur' },
+                { eta: 6, platform: 'Andén 2', destination: 'Puerta del Sur' },
+                { eta: 11, platform: 'Andén 2', destination: 'Puerta del Sur' }
+              ]},
+              { label: 'Hospital Infanta Sofía', trains: [
+                { eta: 7, platform: 'Andén 1', destination: 'Hospital Infanta Sofía' },
+                { eta: 13, platform: 'Andén 1', destination: 'Hospital Infanta Sofía' },
+                { eta: 19, platform: 'Andén 1', destination: 'Hospital Infanta Sofía' }
+              ]}
+            ]
+          }
+        }
+      },
+      'sol': {
+        name: 'Sol',
+        lines: {
+          'L1': {
+            label: 'L1',
+            directions: [
+              { label: 'Pinar de Chamartín', trains: [
+                { eta: 1, platform: 'Andén 1', destination: 'Pinar de Chamartín' },
+                { eta: 5, platform: 'Andén 1', destination: 'Pinar de Chamartín' },
+                { eta: 10, platform: 'Andén 1', destination: 'Pinar de Chamartín' }
+              ]},
+              { label: 'Valdecarros', trains: [
+                { eta: 3, platform: 'Andén 2', destination: 'Valdecarros' },
+                { eta: 8, platform: 'Andén 2', destination: 'Valdecarros' },
+                { eta: 13, platform: 'Andén 2', destination: 'Valdecarros' }
+              ]}
+            ]
+          },
+          'L2': {
+            label: 'L2',
+            directions: [
+              { label: 'Las Rosas', trains: [
+                { eta: 4, platform: 'Andén 1', destination: 'Las Rosas' },
+                { eta: 9, platform: 'Andén 1', destination: 'Las Rosas' },
+                { eta: 14, platform: 'Andén 1', destination: 'Las Rosas' }
+              ]},
+              { label: 'Cuatro Caminos', trains: [
+                { eta: 2, platform: 'Andén 2', destination: 'Cuatro Caminos' },
+                { eta: 7, platform: 'Andén 2', destination: 'Cuatro Caminos' },
+                { eta: 12, platform: 'Andén 2', destination: 'Cuatro Caminos' }
+              ]}
+            ]
+          },
+          'L3': {
+            label: 'L3',
+            directions: [
+              { label: 'Villaverde Alto', trains: [
+                { eta: 6, platform: 'Andén 1', destination: 'Villaverde Alto' },
+                { eta: 11, platform: 'Andén 1', destination: 'Villaverde Alto' },
+                { eta: 17, platform: 'Andén 1', destination: 'Villaverde Alto' }
+              ]},
+              { label: 'Moncloa', trains: [
+                { eta: 3, platform: 'Andén 2', destination: 'Moncloa' },
+                { eta: 8, platform: 'Andén 2', destination: 'Moncloa' },
+                { eta: 14, platform: 'Andén 2', destination: 'Moncloa' }
+              ]}
+            ]
+          }
+        }
+      },
+      'gran-via': {
+        name: 'Gran Vía',
+        lines: {
+          'L1': {
+            label: 'L1',
+            directions: [
+              { label: 'Pinar de Chamartín', trains: [
+                { eta: 2, platform: 'Andén 1', destination: 'Pinar de Chamartín' },
+                { eta: 7, platform: 'Andén 1', destination: 'Pinar de Chamartín' },
+                { eta: 12, platform: 'Andén 1', destination: 'Pinar de Chamartín' }
+              ]},
+              { label: 'Valdecarros', trains: [
+                { eta: 4, platform: 'Andén 2', destination: 'Valdecarros' },
+                { eta: 9, platform: 'Andén 2', destination: 'Valdecarros' },
+                { eta: 15, platform: 'Andén 2', destination: 'Valdecarros' }
+              ]}
+            ]
+          },
+          'L5': {
+            label: 'L5',
+            directions: [
+              { label: 'Alameda de Osuna', trains: [
+                { eta: 1, platform: 'Andén 1', destination: 'Alameda de Osuna' },
+                { eta: 6, platform: 'Andén 1', destination: 'Alameda de Osuna' },
+                { eta: 11, platform: 'Andén 1', destination: 'Alameda de Osuna' }
+              ]},
+              { label: 'Casa de Campo', trains: [
+                { eta: 5, platform: 'Andén 2', destination: 'Casa de Campo' },
+                { eta: 10, platform: 'Andén 2', destination: 'Casa de Campo' },
+                { eta: 16, platform: 'Andén 2', destination: 'Casa de Campo' }
+              ]}
+            ]
+          }
+        }
+      },
+      'moncloa': {
+        name: 'Moncloa',
+        lines: {
+          'L3': {
+            label: 'L3',
+            directions: [
+              { label: 'Villaverde Alto', trains: [
+                { eta: 4, platform: 'Andén 1', destination: 'Villaverde Alto' },
+                { eta: 10, platform: 'Andén 1', destination: 'Villaverde Alto' },
+                { eta: 16, platform: 'Andén 1', destination: 'Villaverde Alto' }
+              ]},
+              { label: 'Sol', trains: [
+                { eta: 2, platform: 'Andén 2', destination: 'Sol' },
+                { eta: 8, platform: 'Andén 2', destination: 'Sol' },
+                { eta: 14, platform: 'Andén 2', destination: 'Sol' }
+              ]}
+            ]
+          },
+          'L6': {
+            label: 'L6',
+            directions: [
+              { label: 'Circular (sentido horario)', trains: [
+                { eta: 5, platform: 'Andén 1', destination: 'Circular' },
+                { eta: 11, platform: 'Andén 1', destination: 'Circular' },
+                { eta: 17, platform: 'Andén 1', destination: 'Circular' }
+              ]},
+              { label: 'Circular (sentido antihorario)', trains: [
+                { eta: 3, platform: 'Andén 2', destination: 'Circular' },
+                { eta: 9, platform: 'Andén 2', destination: 'Circular' },
+                { eta: 15, platform: 'Andén 2', destination: 'Circular' }
+              ]}
+            ]
+          }
+        }
+      },
+      'callao': {
+        name: 'Callao',
+        lines: {
+          'L3': {
+            label: 'L3',
+            directions: [
+              { label: 'Villaverde Alto', trains: [
+                { eta: 3, platform: 'Andén 1', destination: 'Villaverde Alto' },
+                { eta: 8, platform: 'Andén 1', destination: 'Villaverde Alto' },
+                { eta: 13, platform: 'Andén 1', destination: 'Villaverde Alto' }
+              ]},
+              { label: 'Moncloa', trains: [
+                { eta: 5, platform: 'Andén 2', destination: 'Moncloa' },
+                { eta: 10, platform: 'Andén 2', destination: 'Moncloa' },
+                { eta: 16, platform: 'Andén 2', destination: 'Moncloa' }
+              ]}
+            ]
+          },
+          'L5': {
+            label: 'L5',
+            directions: [
+              { label: 'Alameda de Osuna', trains: [
+                { eta: 2, platform: 'Andén 1', destination: 'Alameda de Osuna' },
+                { eta: 7, platform: 'Andén 1', destination: 'Alameda de Osuna' },
+                { eta: 12, platform: 'Andén 1', destination: 'Alameda de Osuna' }
+              ]},
+              { label: 'Casa de Campo', trains: [
+                { eta: 4, platform: 'Andén 2', destination: 'Casa de Campo' },
+                { eta: 9, platform: 'Andén 2', destination: 'Casa de Campo' },
+                { eta: 15, platform: 'Andén 2', destination: 'Casa de Campo' }
+              ]}
+            ]
+          }
+        }
+      },
+      'retiro': {
+        name: 'Retiro',
+        lines: {
+          'L2': {
+            label: 'L2',
+            directions: [
+              { label: 'Las Rosas', trains: [
+                { eta: 1, platform: 'Andén 1', destination: 'Las Rosas' },
+                { eta: 6, platform: 'Andén 1', destination: 'Las Rosas' },
+                { eta: 11, platform: 'Andén 1', destination: 'Las Rosas' }
+              ]},
+              { label: 'Cuatro Caminos', trains: [
+                { eta: 3, platform: 'Andén 2', destination: 'Cuatro Caminos' },
+                { eta: 8, platform: 'Andén 2', destination: 'Cuatro Caminos' },
+                { eta: 13, platform: 'Andén 2', destination: 'Cuatro Caminos' }
+              ]}
+            ]
+          }
+        }
+      },
+      'atocha': {
+        name: 'Atocha',
+        lines: {
+          'L1': {
+            label: 'L1',
+            directions: [
+              { label: 'Pinar de Chamartín', trains: [
+                { eta: 2, platform: 'Andén 1', destination: 'Pinar de Chamartín' },
+                { eta: 8, platform: 'Andén 1', destination: 'Pinar de Chamartín' },
+                { eta: 14, platform: 'Andén 1', destination: 'Pinar de Chamartín' }
+              ]},
+              { label: 'Valdecarros', trains: [
+                { eta: 4, platform: 'Andén 2', destination: 'Valdecarros' },
+                { eta: 10, platform: 'Andén 2', destination: 'Valdecarros' },
+                { eta: 16, platform: 'Andén 2', destination: 'Valdecarros' }
+              ]}
+            ]
+          }
+        }
+      },
+      'plaza-espana': {
+        name: 'Plaza de España',
+        lines: {
+          'L3': {
+            label: 'L3',
+            directions: [
+              { label: 'Villaverde Alto', trains: [
+                { eta: 5, platform: 'Andén 1', destination: 'Villaverde Alto' },
+                { eta: 11, platform: 'Andén 1', destination: 'Villaverde Alto' },
+                { eta: 17, platform: 'Andén 1', destination: 'Villaverde Alto' }
+              ]},
+              { label: 'Moncloa', trains: [
+                { eta: 2, platform: 'Andén 2', destination: 'Moncloa' },
+                { eta: 7, platform: 'Andén 2', destination: 'Moncloa' },
+                { eta: 13, platform: 'Andén 2', destination: 'Moncloa' }
+              ]}
+            ]
+          },
+          'L10': {
+            label: 'L10',
+            directions: [
+              { label: 'Puerta del Sur', trains: [
+                { eta: 3, platform: 'Andén 1', destination: 'Puerta del Sur' },
+                { eta: 9, platform: 'Andén 1', destination: 'Puerta del Sur' },
+                { eta: 15, platform: 'Andén 1', destination: 'Puerta del Sur' }
+              ]},
+              { label: 'Hospital Infanta Sofía', trains: [
+                { eta: 6, platform: 'Andén 2', destination: 'Hospital Infanta Sofía' },
+                { eta: 12, platform: 'Andén 2', destination: 'Hospital Infanta Sofía' },
+                { eta: 18, platform: 'Andén 2', destination: 'Hospital Infanta Sofía' }
+              ]}
+            ]
+          }
+        }
+      },
+      'tribunal': {
+        name: 'Tribunal',
+        lines: {
+          'L1': {
+            label: 'L1',
+            directions: [
+              { label: 'Pinar de Chamartín', trains: [
+                { eta: 4, platform: 'Andén 1', destination: 'Pinar de Chamartín' },
+                { eta: 9, platform: 'Andén 1', destination: 'Pinar de Chamartín' },
+                { eta: 15, platform: 'Andén 1', destination: 'Pinar de Chamartín' }
+              ]},
+              { label: 'Valdecarros', trains: [
+                { eta: 2, platform: 'Andén 2', destination: 'Valdecarros' },
+                { eta: 7, platform: 'Andén 2', destination: 'Valdecarros' },
+                { eta: 12, platform: 'Andén 2', destination: 'Valdecarros' }
+              ]}
+            ]
+          },
+          'L10': {
+            label: 'L10',
+            directions: [
+              { label: 'Puerta del Sur', trains: [
+                { eta: 1, platform: 'Andén 1', destination: 'Puerta del Sur' },
+                { eta: 5, platform: 'Andén 1', destination: 'Puerta del Sur' },
+                { eta: 10, platform: 'Andén 1', destination: 'Puerta del Sur' }
+              ]},
+              { label: 'Hospital Infanta Sofía', trains: [
+                { eta: 8, platform: 'Andén 2', destination: 'Hospital Infanta Sofía' },
+                { eta: 14, platform: 'Andén 2', destination: 'Hospital Infanta Sofía' },
+                { eta: 20, platform: 'Andén 2', destination: 'Hospital Infanta Sofía' }
+              ]}
+            ]
+          }
+        }
+      },
+      'banco-espana': {
+        name: 'Banco de España',
+        lines: {
+          'L2': {
+            label: 'L2',
+            directions: [
+              { label: 'Las Rosas', trains: [
+                { eta: 3, platform: 'Andén 1', destination: 'Las Rosas' },
+                { eta: 8, platform: 'Andén 1', destination: 'Las Rosas' },
+                { eta: 14, platform: 'Andén 1', destination: 'Las Rosas' }
+              ]},
+              { label: 'Cuatro Caminos', trains: [
+                { eta: 5, platform: 'Andén 2', destination: 'Cuatro Caminos' },
+                { eta: 11, platform: 'Andén 2', destination: 'Cuatro Caminos' },
+                { eta: 17, platform: 'Andén 2', destination: 'Cuatro Caminos' }
+              ]}
+            ]
+          }
+        }
+      }
+    };
+
+    /* ── Estado de la aplicación ─────────────────────────────────────── */
+    var state = {
+      stationId: 'nuevos-ministerios',
+      lineId: 'L10',
+      directionIndex: 0,
+      offset: 0
+    };
+
+    /* ── Referencias al DOM ─────────────────────────────────────────── */
+    var stationSelect   = document.getElementById('station-select');
+    var linesContainer  = document.getElementById('lines-container');
+    var directionSelect = document.getElementById('direction-select');
+    var heroBadge       = document.getElementById('hero-badge');
+    var nextMinutes     = document.getElementById('next-minutes');
+    var nextDestination = document.getElementById('next-destination');
+    var nextPlatform    = document.getElementById('next-platform');
+    var trainsList      = document.getElementById('trains-list');
+    var updatedTime     = document.getElementById('updated-time');
+    var btnChange       = document.getElementById('btn-change');
+    var btnRefresh      = document.getElementById('btn-refresh');
+    var themeToggle     = document.getElementById('theme-toggle');
+    var clockEl         = document.getElementById('clock');
+
+    /* ── Helpers ─────────────────────────────────────────────────────── */
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    function nowString() {
+      var d = new Date();
+      return pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    function iconMoon() {
+      return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    }
+
+    function iconSun() {
+      return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
+    }
+
+    /* ── Renderizado de chips de línea ───────────────────────────────── */
+    function renderLines() {
+      var station = CATALOGUE[state.stationId];
+      var lineIds = Object.keys(station.lines);
+      linesContainer.innerHTML = '';
+      lineIds.forEach(function (lid) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'line-chip' + (lid === state.lineId ? ' is-active' : '');
+        btn.textContent = station.lines[lid].label;
+        btn.setAttribute('aria-pressed', lid === state.lineId ? 'true' : 'false');
+        btn.addEventListener('click', function () {
+          state.lineId = lid;
+          state.directionIndex = 0;
+          renderLines();
+          renderDirections();
+          renderTrains();
+        });
+        linesContainer.appendChild(btn);
+      });
+    }
+
+    /* ── Renderizado de selector de dirección ───────────────────────── */
+    function renderDirections() {
+      var station = CATALOGUE[state.stationId];
+      var line = station.lines[state.lineId];
+      directionSelect.innerHTML = '';
+      line.directions.forEach(function (dir, i) {
+        var opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = dir.label;
+        directionSelect.appendChild(opt);
+      });
+      directionSelect.value = state.directionIndex;
+    }
+
+    /* ── Renderizado del hero y la lista ─────────────────────────────── */
+    function renderTrains() {
+      var station   = CATALOGUE[state.stationId];
+      var line      = station.lines[state.lineId];
+      var direction = line.directions[state.directionIndex];
+      var trains    = direction.trains;
+
+      heroBadge.textContent = 'Línea ' + line.label.replace('L', '');
+
+      var first = trains[0];
+      var eta   = Math.max(1, first.eta + state.offset);
+
+      // Número de minutos (mínimo 32px garantizado por clamp en CSS)
+      nextMinutes.childNodes[0].textContent = eta + '\u00A0';
+      nextDestination.textContent = first.destination;
+      nextPlatform.textContent    = first.platform;
+
+      // Lista de siguientes
+      trainsList.innerHTML = '';
+      trains.slice(1).forEach(function (t) {
+        var etaNext = Math.max(eta + 1, t.eta + state.offset);
+        var article = document.createElement('article');
+        article.className = 'train-row';
+        article.innerHTML =
+          '<div>' +
+            '<div class="eta">' + etaNext + ' min</div>' +
+            '<div class="destination">Destino: ' + t.destination + '</div>' +
+          '</div>' +
+          '<div class="platform">' + t.platform + '</div>';
+        trainsList.appendChild(article);
+      });
+
+      var now = nowString();
+      updatedTime.textContent = 'Actualizado a las ' + now;
+      clockEl.textContent     = now;
+    }
+
+    /* ── Actualización completa de la vista ─────────────────────────── */
+    function renderAll() {
+      renderLines();
+      renderDirections();
+      renderTrains();
+    }
+
+    /* ── Eventos ─────────────────────────────────────────────────────── */
+    stationSelect.addEventListener('change', function () {
+      state.stationId = this.value;
+      var firstLine = Object.keys(CATALOGUE[state.stationId].lines)[0];
+      state.lineId = firstLine;
+      state.directionIndex = 0;
+      renderAll();
+    });
+
+    directionSelect.addEventListener('change', function () {
+      state.directionIndex = parseInt(this.value, 10);
+      renderTrains();
+    });
+
+    btnChange.addEventListener('click', function () {
+      stationSelect.focus();
+    });
+
+    btnRefresh.addEventListener('click', function () {
+      // Simula una actualización variando ligeramente los tiempos
+      state.offset = Math.floor(Math.random() * 3) - 1;
+      renderTrains();
+
+      // Animación visual
+      btnRefresh.style.transform = 'scale(0.96)';
+      setTimeout(function () { btnRefresh.style.transform = ''; }, 120);
+    });
+
+    /* ── Tema claro / oscuro ─────────────────────────────────────────── */
+    var theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+    themeToggle.innerHTML = theme === 'dark' ? iconSun() : iconMoon();
+
+    themeToggle.addEventListener('click', function () {
+      theme = theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+      themeToggle.innerHTML = theme === 'dark' ? iconSun() : iconMoon();
+    });
+
+    /* ── Reloj en tiempo real ────────────────────────────────────────── */
+    setInterval(function () { clockEl.textContent = nowString(); }, 10000);
+
+    /* ── Arranque ────────────────────────────────────────────────────── */
+    renderAll();
+
+  })();
+  </script>
+</body>
+</html>
