@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import type { Catalogue, Station, Line, Direction } from "@/lib/types/catalogue";
 import type { SelectedContext } from "@/types/context.types";
 
@@ -73,10 +73,15 @@ export function useContextSelector(): ContextSelectorState {
   })();
 
   // ── Derived — selectedContext ─────────────────────────────────────────────
-  const selectedContext: SelectedContext | null =
-    selectedStationId && selectedLineId && selectedDirection
-      ? { stationId: selectedStationId, lineId: selectedLineId, direction: selectedDirection }
-      : null;
+  // useMemo stabilizes the object reference — without it, a new object on every
+  // render would cause useTimesShell's useEffect to fire in an infinite loop.
+  const selectedContext: SelectedContext | null = useMemo(
+    () =>
+      selectedStationId && selectedLineId && selectedDirection
+        ? { stationId: selectedStationId, lineId: selectedLineId, direction: selectedDirection }
+        : null,
+    [selectedStationId, selectedLineId, selectedDirection]
+  );
 
   // ── Actions ───────────────────────────────────────────────────────────────
 

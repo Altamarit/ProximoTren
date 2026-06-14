@@ -8,15 +8,18 @@ import type { NextConfig } from "next";
 // same origin BFF — preventing any client-side call to CRTM that would expose
 // CRTM_API_KEY to the browser.
 
+const isDev = process.env.NODE_ENV === "development";
+
 const SECURITY_HEADERS = [
   {
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
       // 'unsafe-inline' required for Next.js App Router hydration bootstrap scripts.
+      // 'unsafe-eval' required only in development for React Refresh / hot reload.
       // Nonce-based approach (next.config + middleware) would be more restrictive
       // but requires per-request nonce injection — tracked as follow-up (E7-S4).
-      "script-src 'self' 'unsafe-inline'",
+      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
       // 'unsafe-inline' required for Next.js styled-jsx / CSS-in-JS inline styles.
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",
