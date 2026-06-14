@@ -27,3 +27,5 @@ tools/mcp-server/.token
 *.enc
 .cursor/mcp.json
 .vscode/mcp.json
+
+.vercel

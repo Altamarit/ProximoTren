@@ -21,9 +21,10 @@ const SECURITY_HEADERS = [
       // but requires per-request nonce injection — tracked as follow-up (E7-S4).
       `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
       // 'unsafe-inline' required for Next.js styled-jsx / CSS-in-JS inline styles.
-      "style-src 'self' 'unsafe-inline'",
+      // api.fontshare.com required for Satoshi typeface (design system).
+      "style-src 'self' 'unsafe-inline' https://api.fontshare.com",
       "img-src 'self' data:",
-      "font-src 'self'",
+      "font-src 'self' https://api.fontshare.com https://cdn.fontshare.com",
       // CRITICAL INVARIANT: 'self' only — browser cannot call CRTM directly.
       // This architecturally enforces the BFF pattern and protects CRTM_API_KEY.
       "connect-src 'self'",

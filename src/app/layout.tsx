@@ -13,6 +13,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
+      <head>
+        <meta charSet="utf-8" />
+        <link rel="preconnect" href="https://api.fontshare.com" />
+        <link
+          href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
